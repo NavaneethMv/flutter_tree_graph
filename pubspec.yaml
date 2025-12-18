@@ -1,0 +1,22 @@
+name: flutter_tree_graph
+description: "A customizable Flutter widget for displaying hierarchical tree structures with automatic layout algorithms."
+version: 0.1.0
+homepage: https://github.com/yourusername/flutter_tree_graph
+repository: https://github.com/yourusername/flutter_tree_graph
+issue_tracker: https://github.com/yourusername/flutter_tree_graph/issues
+
+environment:
+  sdk: ^3.9.2
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  # No plugins or platform code needed for this package
