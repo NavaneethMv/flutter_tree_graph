@@ -5,31 +5,78 @@ import 'package:flutter_tree_graph/flutter_tree_graph.dart';
 import 'package:flutter_tree_graph/src/utils/tree_builder.dart';
 import 'package:flutter_tree_graph/src/widgets/tree_painter.dart';
 
+/// A customizable widget that lays out and renders a tree of nodes.
+///
+/// `TreeView` is a generic widget that accepts a list of data items of type
+/// `T extends TreeNodeData` and a `nodeBuilder` callback used to build the
+/// visual representation of each node. The widget uses a `TreeBuilder` to
+/// convert the flat list of data into a tree of `TreeNode<T>` objects, then
+/// applies the provided `TreeLayout` to compute `x`/`y` coordinates for each
+/// node. Connection lines between nodes are drawn using `TreePainter` and the
+/// nodes themselves are positioned as `Positioned` children inside a `Stack`.
+///
+/// Important notes / contract:
+/// - The layout algorithm will populate `x` and `y` on each `TreeNode`.
+/// - `nodeBuilder` receives the original `T` data and should produce a
+///   widget sized to match `nodeWidth`/`nodeHeight` (or use `SizedBox` to
+///   constrain the returned widget).
+/// - Connections are drawn beneath the node widgets; interactivity (taps,
+///   gestures) should be handled by the node widgets provided by
+///   `nodeBuilder`.
+///
+/// Example
+/// ```dart
+/// TreeView<MyNodeData>(
+///   data: items,
+///   nodeBuilder: (context, data) => Card(
+///     child: Center(child: Text(data.title)),
+///   ),
+///   layout: SimpleLayout(),
+///   nodeWidth: 120,
+///   nodeHeight: 64,
+/// );
+/// ```
+
+/// Builds a widget for a single node given its typed data.
+///
+/// The returned widget will be placed into a fixed `SizedBox` matching the
+/// `nodeWidth` and `nodeHeight` provided to `TreeView`. For consistent
+/// visuals, make sure the builder returns a widget that respects those
+/// constraints (or wrap it in `SizedBox`).
 typedef NodeBuilder<T> = Widget Function(BuildContext context, T data);
 
 class TreeView<T extends TreeNodeData> extends StatefulWidget {
-  // List of data items
+  /// The list of data items used to build the logical tree. Each item must
+  /// contain identifiers/parent references understood by `TreeBuilder`.
   final List<T> data;
 
-  /// Builder for individual node widgets
+  /// Callback that builds the widget for a single node from its data.
   final NodeBuilder<T> nodeBuilder;
 
-  /// Layout algorithm
+  /// The layout algorithm used to compute node coordinates.
+  ///
+  /// Defaults to [SimpleLayout] when not provided.
   final TreeLayout layout;
 
-  /// Node dimensions
+  /// The width and height used when positioning node widgets and when
+  /// drawing connection lines.
   final double nodeWidth;
   final double nodeHeight;
 
-  /// Spacing
+  /// Spacing between nodes horizontally and vertically used by the layout
+  /// algorithm.
   final double horizontalSpacing;
   final double verticalSpacing;
 
-  /// Line styling
+  /// Styling of the connecting lines (color and stroke width).
   final Color lineColor;
   final double lineWidth;
 
-  TreeView({
+  /// Create a [TreeView].
+  ///
+  /// Provide `data` and `nodeBuilder`. Other parameters have sensible
+  /// defaults but can be tuned to alter sizes, spacing and line styling.
+  const TreeView({
     super.key,
     required this.data,
     required this.nodeBuilder,
@@ -40,7 +87,7 @@ class TreeView<T extends TreeNodeData> extends StatefulWidget {
     this.verticalSpacing = 100,
     this.lineColor = Colors.grey,
     this.lineWidth = 2,
-  }) : layout = layout ?? SimpleLayout();
+  }) : layout = layout ?? const SimpleLayout();
 
   @override
   State<TreeView<T>> createState() => _TreeViewState<T>();
@@ -58,6 +105,7 @@ class _TreeViewState<T extends TreeNodeData> extends State<TreeView<T>> {
   @override
   void didUpdateWidget(TreeView<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Rebuild the tree when the input data changes.
     if (oldWidget.data != widget.data) {
       _buildTree();
     }
@@ -122,6 +170,10 @@ class _TreeViewState<T extends TreeNodeData> extends State<TreeView<T>> {
     List<Widget> widgets = [];
 
     void traverse(TreeNode<T> node) {
+      // Each node is wrapped in a Positioned widget so it can be placed at
+      // the coordinates calculated by the layout algorithm. The child is
+      // constrained to `nodeWidth`/`nodeHeight` which keeps node sizes
+      // consistent with the painter.
       widgets.add(
         Positioned(
           left: node.x,
