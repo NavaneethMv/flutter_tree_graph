@@ -27,7 +27,9 @@ abstract class TreeNodeData {
   String get id;
 
   // Identifier of the parent node; null if this is a root node
-  String? get parentId;
+  List<String> get parentIds;
+
+  String? get partnerId => null;
 
   // Override for custom equality comparison
   @override
@@ -43,10 +45,12 @@ abstract class TreeNodeData {
 
 class TreeNode<T extends TreeNodeData> {
   final T data;
-  TreeNode<T>? parent;
-  final List<TreeNode<T>> children = [];
 
-  // Layout porperties
+  List<TreeNode<T>> parents = [];
+  final List<TreeNode<T>> children = [];
+  TreeNode<T>? partner; // Spouse/partner
+
+  // Layout properties
   double x = 0.0;
   double y = 0.0;
 
@@ -55,5 +59,34 @@ class TreeNode<T extends TreeNodeData> {
 
   int level = 0;
 
+  // For tracking during layout
+  TreeNode<T>? thread;
+  TreeNode<T>? ancestor;
+  double change = 0;
+  double shift = 0;
+  int number = 0;
+
   TreeNode(this.data);
+
+  /// Whether this node is a root (no parents)
+  bool get isRoot => parents.isEmpty;
+
+  /// Whether this node is a leaf (no children)
+  bool get isLeaf => children.isEmpty;
+
+  /// Get leftmost child
+  TreeNode<T>? get leftmostChild => children.isEmpty ? null : children.first;
+
+  /// Get rightmost child
+  TreeNode<T>? get rightmostChild => children.isEmpty ? null : children.last;
+
+  /// Get left sibling
+  TreeNode<T>? getLeftSibling() {
+    if (parents.isEmpty) return null;
+
+    final parent = parents.first;
+    final index = parent.children.indexOf(this);
+
+    return index > 0 ? parent.children[index - 1] : null;
+  }
 }
