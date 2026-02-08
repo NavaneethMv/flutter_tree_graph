@@ -41,7 +41,7 @@ TreeView<Person>(
 
 - [x] Basic tree layout
 - [x] Simple grid algorithm
-- [ ] Walker's algorithm
+- [x] Walker's algorithm
 - [ ] Drag to reposition
 - [ ] Custom line styles
 - [ ] Animations
