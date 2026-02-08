@@ -5,15 +5,23 @@ import 'package:flutter_tree_graph/flutter_tree_graph.dart';
 import 'package:flutter_tree_graph/src/utils/tree_builder.dart';
 import 'package:flutter_tree_graph/src/widgets/tree_painter.dart';
 
+/// Builds a widget for a single node given its typed data.
+///
+/// The returned widget will be placed into a fixed `SizedBox` matching the
+/// `nodeWidth` and `nodeHeight` provided to `TreeView`. For consistent
+/// visuals, make sure the builder returns a widget that respects those
+/// constraints (or wrap it in `SizedBox`).
+typedef NodeBuilder<T> = Widget Function(BuildContext context, T data);
+
 /// A customizable widget that lays out and renders a tree of nodes.
 ///
 /// `TreeView` is a generic widget that accepts a list of data items of type
 /// `T extends TreeNodeData` and a `nodeBuilder` callback used to build the
 /// visual representation of each node. The widget uses a `TreeBuilder` to
 /// convert the flat list of data into a tree of `TreeNode<T>` objects, then
-/// applies the provided `TreeLayout` to compute `x`/`y` coordinates for each
-/// node. Connection lines between nodes are drawn using `TreePainter` and the
-/// nodes themselves are positioned as `Positioned` children inside a `Stack`.
+/// applies the provided [TreeLayout] to compute `x`/`y` coordinates for each
+/// node. Connection lines between nodes are drawn using [TreePainter] and the
+/// nodes themselves are positioned as [Positioned] children inside a [Stack].
 ///
 /// Important notes / contract:
 /// - The layout algorithm will populate `x` and `y` on each `TreeNode`.
@@ -22,7 +30,7 @@ import 'package:flutter_tree_graph/src/widgets/tree_painter.dart';
 ///   constrain the returned widget).
 /// - Connections are drawn beneath the node widgets; interactivity (taps,
 ///   gestures) should be handled by the node widgets provided by
-///   `nodeBuilder`.
+///   [nodeBuilder].
 ///
 /// Example
 /// ```dart
@@ -37,17 +45,9 @@ import 'package:flutter_tree_graph/src/widgets/tree_painter.dart';
 /// );
 /// ```
 
-/// Builds a widget for a single node given its typed data.
-///
-/// The returned widget will be placed into a fixed `SizedBox` matching the
-/// `nodeWidth` and `nodeHeight` provided to `TreeView`. For consistent
-/// visuals, make sure the builder returns a widget that respects those
-/// constraints (or wrap it in `SizedBox`).
-typedef NodeBuilder<T> = Widget Function(BuildContext context, T data);
-
 class TreeView<T extends TreeNodeData> extends StatefulWidget {
   /// The list of data items used to build the logical tree. Each item must
-  /// contain identifiers/parent references understood by `TreeBuilder`.
+  /// contain identifiers/parent references understood by [TreeBuilder].
   final List<T> data;
 
   /// Callback that builds the widget for a single node from its data.
@@ -60,16 +60,25 @@ class TreeView<T extends TreeNodeData> extends StatefulWidget {
 
   /// The width and height used when positioning node widgets and when
   /// drawing connection lines.
+  /// The width of a node in logical pixels.
   final double nodeWidth;
+
+  /// The height of a node in logical pixels.
   final double nodeHeight;
 
   /// Spacing between nodes horizontally and vertically used by the layout
   /// algorithm.
+  /// The horizontal spacing between adjacent nodes.
   final double horizontalSpacing;
+
+  /// The vertical spacing between levels of the tree.
   final double verticalSpacing;
 
   /// Styling of the connecting lines (color and stroke width).
+  /// The color of the connection lines between nodes.
   final Color lineColor;
+
+  /// The stroke width of the connection lines.
   final double lineWidth;
 
   /// Create a [TreeView].
@@ -139,7 +148,8 @@ class _TreeViewState<T extends TreeNodeData> extends State<TreeView<T>> {
     });
 
     return InteractiveViewer(
-      boundaryMargin: EdgeInsets.all(100.0),
+      boundaryMargin: const EdgeInsets.all(double.infinity),
+      constrained: false,
       minScale: 0.1,
       maxScale: 4.0,
       child: SizedBox(
@@ -186,6 +196,20 @@ class _TreeViewState<T extends TreeNodeData> extends State<TreeView<T>> {
         ),
       );
 
+      if (node.partner != null) {
+        widgets.add(
+          Positioned(
+            left: node.partner!.x,
+            top: node.partner!.y,
+            child: SizedBox(
+              width: widget.nodeWidth,
+              height: widget.nodeHeight,
+              child: widget.nodeBuilder(context, node.partner!.data),
+            ),
+          ),
+        );
+      }
+
       for (var child in node.children) {
         traverse(child);
       }
@@ -204,6 +228,9 @@ class _TreeViewState<T extends TreeNodeData> extends State<TreeView<T>> {
   ) {
     for (var node in nodes) {
       callback(node.x, node.y);
+      if (node.partner != null) {
+        callback(node.partner!.x, node.partner!.y);
+      }
       _findBounds(node.children, callback);
     }
   }
