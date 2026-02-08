@@ -15,7 +15,7 @@ import 'package:flutter_tree_graph/flutter_tree_graph.dart';
 /// (`nodeWidth`, `nodeHeight`, `lineColor`, `lineWidth`). This class only
 /// concerns itself with drawing the connection lines — rendering of the node
 /// boxes or labels should be done by other widgets placed on top of or under
-/// the `CustomPaint` that uses this painter.
+/// the [CustomPaint] that uses this painter.
 ///
 /// Example
 /// ```dart
@@ -41,12 +41,22 @@ import 'package:flutter_tree_graph/flutter_tree_graph.dart';
 /// ```
 
 class TreePainter extends CustomPainter {
+  /// The list of roots of the trees to paint.
   final List<TreeNode> roots;
+
+  /// The width of each node, used to calculate connection points.
   final double nodeWidth;
+
+  /// The height of each node, used to calculate connection points.
   final double nodeHeight;
+
+  /// The color of the connection lines.
   final Color lineColor;
+
+  /// The stroke width of the connection lines.
   final double lineWidth;
 
+  /// Creates a [TreePainter].
   TreePainter({
     required this.roots,
     required this.nodeWidth,
@@ -76,14 +86,36 @@ class TreePainter extends CustomPainter {
   ///
   /// The algorithm draws an orthogonal path from the parent's bottom-center
   /// to the child's top-center: it goes vertically down from the parent to a
+  /// to the child's top-center: it goes vertically down from the parent to a
   /// mid Y, moves horizontally to the child's column, then vertically to the
   /// child. This produces a clear tree layout without diagonal lines.
   void _drawConnections(Canvas canvas, TreeNode node, Paint paint) {
+    if (node.partner != null) {
+      // We only draw from left to right to avoid drawing the line twice
+      if (node.x < node.partner!.x) {
+        final startX = node.x + nodeWidth;
+        final startY = node.y + (nodeHeight / 2);
+        final endX = node.partner!.x;
+        final endY = startY;
+
+        canvas.drawLine(Offset(startX, startY), Offset(endX, endY), paint);
+      }
+    }
+
     if (node.children.isEmpty) return;
 
     // Parent center bottom
     double parentX = node.x + nodeWidth / 2;
     double parentY = node.y + nodeHeight;
+
+    // If there is a partner, the "center" of the parent unit is between them
+    if (node.partner != null) {
+      // Assuming layout places partner to the right
+      // Center = (Node Center + Partner Center) / 2
+      // Node Center = node.x + w/2
+      // Partner Center = partner.x + w/2
+      parentX = (parentX + (node.partner!.x + nodeWidth / 2)) / 2;
+    }
 
     for (var child in node.children) {
       // Child center top
