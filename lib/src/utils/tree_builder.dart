@@ -84,6 +84,9 @@ class TreeBuilder<T extends TreeNodeData> {
   /// }
   /// ```
   List<TreeNode<T>> buildTree(List<T> data) {
+    if (data.isEmpty) {
+      return [];
+    }
     // Create map for O(1) lookup of nodes by ID
     Map<String, TreeNode<T>> nodeMap = {};
 
@@ -91,26 +94,59 @@ class TreeBuilder<T extends TreeNodeData> {
       nodeMap[item.id] = TreeNode<T>(item);
     }
 
-    List<TreeNode<T>> roots = [];
-
+    // pairing nodes - adding partners
     for (var node in nodeMap.values) {
-      if (node.data.parentId == null) {
-        // Node has no parent - it's a root
-        roots.add(node);
-      } else {
-        final TreeNode<T>? parent = nodeMap[node.data.parentId];
+      final partnerId = node.data.partnerId;
+      if (partnerId != null && nodeMap.containsKey(partnerId)) {
+        final partnerNode = nodeMap[partnerId]!;
+
+        node.partner = partnerNode;
+        partnerNode.partner = node;
+      }
+    }
+
+    // Build hierarchy (connect parents and children)
+    for (var node in nodeMap.values) {
+      final parentIds = node.data.parentIds;
+      for (var parentId in parentIds) {
+        TreeNode<T>? parent = nodeMap[parentId];
         if (parent != null) {
-          parent.children.add(node);
-          node.parent = parent;
-        } else {
-          // Parent not found - treat as orphaned root
-          // TODO: Consider stricter validation or error handling
-          roots.add(node);
+          if (!parent.children.contains(node)) {
+            parent.children.add(node);
+          }
+          if (!node.parents.contains(parent)) {
+            node.parents.add(parent);
+          }
         }
       }
     }
 
-    // Phase 3: Calculate depth levels for all nodes
+    // Identify roots
+    List<TreeNode<T>> roots = [];
+    for (var node in nodeMap.values) {
+      final hasParents = node.parents.isNotEmpty;
+
+      if (!hasParents) {
+        if (node.partner == null) {
+          roots.add(node);
+        } else {
+          // Node has a partner
+          // We should add to roots only if:
+          // 1. Partner is not already in roots (avoid duplicates for
+          //    root couples)
+          // 2. Partner also has no parents (if partner has parents, this node
+          //    is attached to descendent)
+          final partnerHasParents = node.partner!.parents.isNotEmpty;
+          final partnerAlreadyRoot = roots.contains(node.partner);
+
+          if (!partnerHasParents && !partnerAlreadyRoot) {
+            roots.add(node);
+          }
+        }
+      }
+    }
+
+    // Calculate depth levels for all nodes
     for (var root in roots) {
       _calculateLevels(root);
     }
@@ -127,7 +163,8 @@ class TreeBuilder<T extends TreeNodeData> {
   ///
   /// **Algorithm:** Depth-first traversal with level propagation
   /// **Time Complexity:** O(n) where n is the number of nodes in the subtree
-  /// **Space Complexity:** O(h) where h is the height of the subtree (recursion stack)
+  /// **Space Complexity:** O(h) where h is the height of the subtree
+  /// (recursion stack)
   ///
   /// Parameters:
   /// - [node]: The starting node for level calculation. This node will be
@@ -152,6 +189,11 @@ class TreeBuilder<T extends TreeNodeData> {
   /// ```
   void _calculateLevels(TreeNode<T> node, [int level = 0]) {
     node.level = level;
+
+    // Ensure parttner node gets the same level
+    if (node.partner != null) {
+      node.partner!.level = level;
+    }
 
     for (var child in node.children) {
       _calculateLevels(child, level + 1);
