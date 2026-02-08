@@ -2,7 +2,8 @@
 
 import 'package:flutter_tree_graph/flutter_tree_graph.dart';
 
-/// A basic tree layout algorithm that arranges nodes in a simple hierarchical structure.
+/// A basic tree layout algorithm that arranges nodes in a simple hierarchical
+/// structure.
 ///
 /// The [SimpleLayout] positions nodes in a traditional tree format where:
 /// - Root nodes are placed at the top
@@ -16,7 +17,8 @@ import 'package:flutter_tree_graph/flutter_tree_graph.dart';
 /// - Cases where advanced positioning algorithms are not needed
 ///
 /// **Layout Characteristics:**
-/// - **Vertical arrangement**: Each level is placed at a fixed vertical distance
+/// - **Vertical arrangement**: Each level is placed at a fixed vertical
+///   distance
 /// - **Horizontal centering**: Parents are centered over their children
 /// - **Uniform spacing**: All nodes at the same level have consistent spacing
 /// - **Multi-tree support**: Multiple root trees are arranged side by side
@@ -33,7 +35,8 @@ import 'package:flutter_tree_graph/flutter_tree_graph.dart';
 /// );
 /// ```
 class SimpleLayout extends TreeLayout {
-  /// Calculates and applies layout positions for all nodes in the provided trees.
+  /// Calculates and applies layout positions for all nodes in the provided
+  /// trees.
   ///
   /// This method implements the main layout algorithm that positions each node
   /// based on its position in the tree hierarchy. The algorithm processes each
@@ -47,7 +50,8 @@ class SimpleLayout extends TreeLayout {
   /// 5. Calculate total tree width for proper spacing between multiple trees
   ///
   /// **Time Complexity:** O(n) where n is the total number of nodes
-  /// **Space Complexity:** O(h) where h is the maximum tree height (recursion stack)
+  /// **Space Complexity:** O(h) where h is the maximum tree height (recursion
+  /// stack)
   ///
   /// Parameters:
   /// - [roots]: List of root nodes representing the trees to layout. Each root
@@ -62,7 +66,8 @@ class SimpleLayout extends TreeLayout {
   ///   Determines the vertical distance between tree levels. Default: 100.
   ///
   /// Side Effects:
-  /// - Modifies the `x` and `y` properties of all [TreeNode] objects in the trees
+  /// - Modifies the `x` and `y` properties of all [TreeNode] objects in the
+  ///   trees
   /// - Nodes are positioned starting from coordinates (0, 0) for the first tree
   /// - Multiple trees are positioned with appropriate horizontal offsets
   ///
@@ -81,6 +86,7 @@ class SimpleLayout extends TreeLayout {
   ///   print('Root at (${root.x}, ${root.y})');
   /// }
   /// ```
+  const SimpleLayout();
   @override
   void calculateLayout(
     List<TreeNode<TreeNodeData>> roots, {
@@ -100,15 +106,28 @@ class SimpleLayout extends TreeLayout {
         horizontalSpacing,
         verticalSpacing,
       );
+
+      // Calculate total width of the current tree to position the next tree
       currentX += _getTreeWidth(root, nodeWidth, horizontalSpacing);
+
+      // Add spacing between trees
+      currentX += horizontalSpacing;
     }
+  }
+
+  // Helper to get the width of a single unit including the partner if present
+  double _getUnitWidth(TreeNode node, double nodeWidth, double hSpacing) {
+    if (node.partner != null) {
+      return (nodeWidth * 2) + hSpacing; // Account for partner node and spacing
+    }
+    return nodeWidth;
   }
 
   /// Recursively positions nodes within a single tree structure.
   ///
-  /// This private method implements the core positioning logic for a single tree,
-  /// using a two-pass algorithm: first positioning children, then adjusting the
-  /// parent position to center it above its children.
+  /// This private method implements the core positioning logic for a single
+  /// tree, using a two-pass algorithm: first positioning children, then
+  /// adjusting the parent position to center it above its children.
   ///
   /// **Algorithm Steps:**
   /// 1. Set the current node's initial position
@@ -121,7 +140,8 @@ class SimpleLayout extends TreeLayout {
   /// **Positioning Strategy:**
   /// - Children are placed in a horizontal line below their parent
   /// - Each child is positioned with the specified horizontal spacing
-  /// - Parent x-coordinate is adjusted to the midpoint between first and last child
+  /// - Parent x-coordinate is adjusted to the midpoint between first and last
+  ///     child
   /// - Y-coordinates follow the tree level with consistent vertical spacing
   ///
   /// Parameters:
@@ -149,23 +169,48 @@ class SimpleLayout extends TreeLayout {
     node.x = x;
     node.y = y;
 
+    if (node.partner != null) {
+      node.partner!.x = x + nodeWidth + hSpacing;
+      node.partner!.y = y;
+    }
+
     if (node.children.isEmpty) return;
 
     double childX = x;
     for (var child in node.children) {
       _layoutTree(child, childX, y + vSpacing, nodeWidth, hSpacing, vSpacing);
-      childX += nodeWidth + hSpacing;
+      childX += _getUnitWidth(child, nodeWidth, hSpacing) + hSpacing;
     }
 
-    // Center parent over the span of its children
+    // 4. Center parent unit over the span of children
     if (node.children.isNotEmpty) {
-      double leftmostChild = node.children.first.x;
-      double rightmostChild = node.children.last.x;
-      node.x = (leftmostChild + rightmostChild) / 2;
+      // Find the visual center of the children block
+      double firstChildStart = node.children.first.x;
+
+      TreeNode lastChild = node.children.last;
+      // Determine the right edge of the last child (taking partner into
+      // account)
+      double lastChildEnd = lastChild.x + nodeWidth;
+      if (lastChild.partner != null) {
+        lastChildEnd = lastChild.partner!.x + nodeWidth;
+      }
+
+      double childrenCenter = (firstChildStart + lastChildEnd) / 2;
+      double parentUnitWidth = _getUnitWidth(node, nodeWidth, hSpacing);
+
+      // Center the parent unit
+      node.x = childrenCenter - (parentUnitWidth / 2);
+
+      // 5. Re-sync partner position
+      if (node.partner != null) {
+        node.partner!.x = node.x + nodeWidth + hSpacing;
+        node.partner!.y = y;
+      }
     }
   }
 
-  /// Calculates the total horizontal width required for a tree rooted at the given node.
+  /// Calculates the total horizontal width required for a tree rooted at the
+  /// given node.
   ///
   /// This method recursively computes the minimum width needed to accommodate
   /// a tree structure, considering node widths and horizontal spacing between
@@ -215,13 +260,22 @@ class SimpleLayout extends TreeLayout {
   /// - A width: 100 + 50 + 250 = 400 (B + spacing + C subtree)
   /// ```
   double _getTreeWidth(TreeNode node, double nodeWidth, double hSpacing) {
-    if (node.children.isEmpty) return nodeWidth;
+    double currentUnitWidth = _getUnitWidth(node, nodeWidth, hSpacing);
 
-    double totalWidth = 0;
+    if (node.children.isEmpty) return currentUnitWidth;
+
+    double childrenTotalWidth = 0;
     for (var child in node.children) {
-      totalWidth += _getTreeWidth(child, nodeWidth, hSpacing) + hSpacing;
+      childrenTotalWidth +=
+          _getTreeWidth(child, nodeWidth, hSpacing) + hSpacing;
     }
 
-    return totalWidth > 0 ? totalWidth - hSpacing : 0;
+    // Remove the trailing spacing from the loop
+    if (childrenTotalWidth > 0) childrenTotalWidth -= hSpacing;
+
+    // The tree width is the max of the current node width vs children width
+    return childrenTotalWidth > currentUnitWidth
+        ? childrenTotalWidth
+        : currentUnitWidth;
   }
 }
