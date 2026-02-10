@@ -33,15 +33,16 @@ class Person extends TreeNodeData {
 // Use the widget
 TreeView<Person>(
   data: myPeople,
+  layout: const WalkersTreeLayout(), // const SimpleTreeLayout(),
   nodeBuilder: (context, person) => Text(person.name),
 )
 ```
 
 ## Roadmap
 
-- [x] Basic tree layout
-- [x] Simple grid algorithm
-- [x] Walker's algorithm
-- [ ] Drag to reposition
-- [ ] Custom line styles
-- [ ] Animations
+- \[x\] Basic tree layout
+- \[x\] Simple grid algorithm
+- \[x\] Walker's algorithm
+- \[ \] Drag to reposition
+- \[ \] Custom line styles
+- \[ \] Animations
