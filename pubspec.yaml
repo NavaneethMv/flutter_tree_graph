@@ -3,7 +3,7 @@ description: "A customizable Flutter widget for displaying hierarchical tree str
 version: 0.1.0
 homepage: https://github.com/NavaneethMv/flutter_tree_graph.git
 repository: https://github.com/NavaneethMv/flutter_tree_graph.git
-issue_tracker: https://github.com/NavaneethMv/flutter_tree_graph.git/issues
+issue_tracker: https://github.com/NavaneethMv/flutter_tree_graph/issues
 
 environment:
   sdk: ^3.9.2
@@ -19,4 +19,3 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 
 flutter:
-  # No plugins or platform code needed for this package
