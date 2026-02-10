@@ -11,7 +11,7 @@ abstract class TreeLayout {
   /// Const constructor for the base layout class.
   const TreeLayout();
 
-  /// Calculates the [x] and [y] positions for all [roots] and their
+  /// Calculates the `x` and `y` positions for all [roots] and their
   /// descendants.
   ///
   /// Implementations should respect the provided [nodeWidth], [nodeHeight],
