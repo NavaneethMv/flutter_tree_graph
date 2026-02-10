@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Partner Logic Demo',
+      title: 'Flutter Tree Graph',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
@@ -110,7 +110,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Family Tree with Partners')),
+      appBar: AppBar(title: const Text('Flutter Tree Graph')),
       body: Center(
         // 3. Use the TreeView
         child: TreeView<Person>(
