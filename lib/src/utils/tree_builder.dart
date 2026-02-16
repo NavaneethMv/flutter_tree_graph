@@ -121,6 +121,27 @@ class TreeBuilder<T extends TreeNodeData> {
       }
     }
 
+    // Auto-include partner parents for children with single parents
+    // This ensures children of couples appear under both parents in the tree
+    // even if only one parent was explicitly specified in the data
+    for (var node in nodeMap.values) {
+      if (node.parents.length == 1) {
+        final singleParent = node.parents.first;
+        final partnerOfParent = singleParent.partner;
+
+        if (partnerOfParent != null &&
+            !node.parents.contains(partnerOfParent)) {
+          // Add partner as second parent
+          node.parents.add(partnerOfParent);
+
+          // Add this node to partner's children if not already there
+          if (!partnerOfParent.children.contains(node)) {
+            partnerOfParent.children.add(node);
+          }
+        }
+      }
+    }
+
     // Identify roots
     List<TreeNode<T>> roots = [];
     for (var node in nodeMap.values) {
@@ -155,48 +176,30 @@ class TreeBuilder<T extends TreeNodeData> {
   }
 
   /// Recursively calculates and assigns depth levels to all nodes in a subtree.
-  ///
-  /// This private method performs a depth-first traversal of the tree starting
-  /// from the given node, assigning level values based on the node's distance
-  /// from the root. The level is used by layout algorithms for vertical
-  /// positioning and by rendering code for styling purposes.
-  ///
-  /// **Algorithm:** Depth-first traversal with level propagation
-  /// **Time Complexity:** O(n) where n is the number of nodes in the subtree
-  /// **Space Complexity:** O(h) where h is the height of the subtree
-  /// (recursion stack)
-  ///
-  /// Parameters:
-  /// - [node]: The starting node for level calculation. This node will be
-  ///   assigned the specified [level], and all descendants will be assigned
-  ///   incrementally higher levels.
-  /// - [level]: The level to assign to the current [node]. Defaults to 0,
-  ///   which is appropriate for root nodes.
-  ///
-  /// Side Effects:
-  /// - Modifies the [level] property of [node] and all its descendants
-  /// - The traversal order affects the order in which nodes are processed,
-  ///   but not the final level assignments
-  ///
-  /// Example behavior:
-  /// ```
-  /// Root (level 0)
-  /// ├── Child A (level 1)
-  /// │   ├── Grandchild A1 (level 2)
-  /// │   └── Grandchild A2 (level 2)
-  /// └── Child B (level 1)
-  ///     └── Grandchild B1 (level 2)
-  /// ```
-  void _calculateLevels(TreeNode<T> node, [int level = 0]) {
+  /// Also reorders parents list to align with traversal path for correct
+  /// layout.
+  void _calculateLevels(
+    TreeNode<T> node, [
+    int level = 0,
+    TreeNode<T>? traversalParent,
+  ]) {
     node.level = level;
 
-    // Ensure parttner node gets the same level
+    // Ensure partner node gets the same level
     if (node.partner != null) {
       node.partner!.level = level;
     }
 
+    // Prioritize traversal parent in parents list for layout algorithms
+    // This ensures getLeftSibling() finds the correct sibling in the traversal
+    // parent's children list
+    if (traversalParent != null && node.parents.contains(traversalParent)) {
+      node.parents.remove(traversalParent);
+      node.parents.insert(0, traversalParent);
+    }
+
     for (var child in node.children) {
-      _calculateLevels(child, level + 1);
+      _calculateLevels(child, level + 1, node);
     }
   }
 }
