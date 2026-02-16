@@ -176,7 +176,8 @@ class TreeBuilder<T extends TreeNodeData> {
   }
 
   /// Recursively calculates and assigns depth levels to all nodes in a subtree.
-  /// Also reorders parents list to align with traversal path for correct layout.
+  /// Also reorders parents list to align with traversal path for correct
+  /// layout.
   void _calculateLevels(
     TreeNode<T> node, [
     int level = 0,
@@ -190,7 +191,8 @@ class TreeBuilder<T extends TreeNodeData> {
     }
 
     // Prioritize traversal parent in parents list for layout algorithms
-    // This ensures getLeftSibling() finds the correct sibling in the traversal parent's children list
+    // This ensures getLeftSibling() finds the correct sibling in the traversal
+    // parent's children list
     if (traversalParent != null && node.parents.contains(traversalParent)) {
       node.parents.remove(traversalParent);
       node.parents.insert(0, traversalParent);
